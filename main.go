@@ -17,30 +17,26 @@ var url = flag.String("u", "", "the url of the go version you want to download")
 var helpMsg = "Usage: go-update-install -v <version-number>\n" +
 	"   or: go-update-install -u <url of binary to install"
 
-func buildFilename(url string) string {
+// download downloads the url to saveDir, overwriting the file if present
+func download(url string, saveDir string) (string, error) {
 	tokens := strings.Split(url, "/")
-	filename := DIR + tokens[len(tokens)-1]
-	return filename
-}
-
-func download(url string) (string, error) {
-	filename := buildFilename(url)
-	f, err := os.Create(filename)
+	filepath := saveDir + tokens[len(tokens)-1]
+	f, err := os.Create(filepath)
 	if err != nil {
 		return "", err
 	}
 	defer f.Close()
 	resp, err := http.Get(url)
 	if err != nil {
-		return filename, err
+		return filepath, err
 	}
 	defer resp.Body.Close()
 	_, err = io.Copy(f, resp.Body)
-	return filename, err
+	return filepath, err
 }
 
-func uninstallOld() error {
-	dir := DIR + "go/"
+// uninstallOld remove the old Go installation in dir
+func uninstallOld(dir string) error {
 	fmt.Printf("\nNow removing old installation deleting %v\n", dir)
 	_, err := os.Stat(dir)
 	if err != nil {
@@ -58,10 +54,11 @@ func uninstallOld() error {
 	return nil
 }
 
-func installNew(filename string) (string, error) {
-	fmt.Printf("\nNow extracting archive %v\n", filename)
+// installNew install Go from filepath to installDir
+func installNew(filepath, installDir string) (string, error) {
+	fmt.Printf("\nNow extracting archive %v\n", filepath)
 	// run the shell command: tar -C /usr/local -xzf go$VERSION.$OS-$ARCH.tar.gz
-	cmd := exec.Command("tar", "-C", DIR, "-xzf", filename)
+	cmd := exec.Command("tar", "-C", installDir, "-xzf", filepath)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -90,20 +87,20 @@ func main() {
 			return
 		}
 	}
-	filename, err := download(*url)
-	if filename != "" {
-		defer os.Remove(filename)
+	filepath, err := download(*url, DIR)
+	if filepath != "" {
+		defer os.Remove(filepath)
 	}
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	err = uninstallOld()
+	err = uninstallOld(DIR + "go/")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	out, err := installNew(buildFilename(*url))
+	out, err := installNew(filepath, DIR)
 	if err != nil {
 		fmt.Println(err)
 		return
