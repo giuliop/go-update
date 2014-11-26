@@ -14,8 +14,8 @@ const DIR = "/usr/local/"
 
 var ver = flag.String("v", "", "the go version you want to download")
 var url = flag.String("u", "", "the url of the go version you want to download")
-var helpMsg = "Usage: go-update-install -v <version-number>\n" +
-	"   or: go-update-install -u <url of binary to install>"
+var helpMsg = "Usage: go-update -v <version-number>\n" +
+	"   or: go-update -u <url of binary to install>"
 
 // download downloads the url to saveDir, overwriting the file if present
 func download(url string, saveDir string) (string, error) {
